@@ -1,6 +1,7 @@
 # rollchain folder
-
+zkproofs/env/
 # off-chain layers
 
 
 # UI
+ui/node_modules/
