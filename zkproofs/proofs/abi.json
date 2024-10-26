@@ -1,0 +1,17 @@
+{
+  "inputs": [
+    {
+      "name": "set_distance",
+      "public": true,
+      "type": "field"
+    },
+    {
+      "name": "user_distance",
+      "public": true,
+      "type": "field"
+    }
+  ],
+  "output": {
+    "type": "bool"
+  }
+}

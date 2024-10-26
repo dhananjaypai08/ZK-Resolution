@@ -25,7 +25,7 @@ function SearchDNSRecord({ contract }) {
       const val = localStorage.getItem("zkproof");
       if(val && searchResult){
         await searchDNSRecordDecrypted();
-        setVerificationMsg("Verified!");
+        setVerificationMsg("Verified by Verifier 1 in Nexus");
         setfwdDNSButton(true);
       }
     };
@@ -35,25 +35,25 @@ function SearchDNSRecord({ contract }) {
 
   const searchDNSRecordDecrypted = async () => {
     setLoading(true);
-    setTxnMsg("Decrypting DNS Record...");
+    setTxnMsg("Retrieving DNS Record...");
     try {
-      let result = await contract.getDNS(searchDomainName);
-      let addr_resolver = localStorage.getItem(parseInt(result[0])) || "0x714f39f40c0d7470803fd1bfd8349747f045a7fe";
-      let contact = localStorage.getItem(parseInt(result[3])) || "dhananjay2002pai@gmail.com";
+      let result = await contract.DNSMapping(searchDomainName);
+      // let addr_resolver = localStorage.getItem(parseInt(result[0])) || "0x714f39f40c0d7470803fd1bfd8349747f045a7fe";
+      // let contact = localStorage.getItem(parseInt(result[3])) || "dhananjay2002pai@gmail.com";
       
       const data = {
-        "_addr_resolver": addr_resolver,
+        "_addr_resolver": result[0],
         "record_type": result[1],
         "expiry": result[2],
-        "contact": contact,
+        "contact": result[3],
         "tokenuri": result[4],
-        "owner": parseInt(result[5].toString())
+        "owner": result[5]
       };
       setSearchResult(data);
-      setTxnMsg("Checking if current query is attested from ZkDNS");
+      // setTxnMsg("Checking if current query is attested from ZkDNS");
       
-      let attested_data = await fetchAttestationData();
-      updateAttestationDisplay(attested_data);
+      // let attested_data = await fetchAttestationData();
+      // updateAttestationDisplay(attested_data);
     } catch (error) {
       console.error('Error searching DNS Record:', error);
       setSearchResult(null);
@@ -65,7 +65,7 @@ function SearchDNSRecord({ contract }) {
     setLoading(true);
     setTxnMsg("Forwarding to DNS Resolver...");
     try {
-      const response = await axios.get(`http://localhost:8002/forwardToResolver?domain=${searchDomainName}&address_resolver=${searchResult._addr_resolver}`);
+      const response = await axios.get(`http://localhost:8000/forwardToResolver?domain=${searchDomainName}&address_resolver=${searchResult._addr_resolver}`);
       setFinalIP(response.data);
     } catch (error) {
       console.error('Error forwarding to DNS:', error);
@@ -79,15 +79,15 @@ function SearchDNSRecord({ contract }) {
     setLoading(true);
     setTxnMsg("Searching Transaction");
     try {
-      if(verificationMsg !== "Verified!") {
-        const result = await contract.getEncryptedDNS(searchDomainName);
+      if(verificationMsg !== "Verified by Verifier 1 in Nexus") {
+        const result = await contract.DNSMapping(searchDomainName);
         const data = {
-          "_addr_resolver": "Unable to showcase address",
+          "_addr_resolver": "Please verify Proof, you can only query DNS address resolver",
           "record_type": result[1],
           "expiry": result[2],
-          "contact": "Please Verify Proof",
+          "contact": "Unable to showcase address",
           "tokenuri": result[4],
-          "owner": parseInt(result[5].toString())
+          "owner": result[5]
         };
         setSearchResult(data);
       } else {
@@ -95,8 +95,8 @@ function SearchDNSRecord({ contract }) {
       }
       
       setTxnMsg("Checking if current query is attested from ZkDNS");
-      let attested_data = await fetchAttestationData();
-      updateAttestationDisplay(attested_data);
+      // let attested_data = await fetchAttestationData();
+      // updateAttestationDisplay(attested_data);
     } catch (error) {
       console.error('Error searching DNS Record:', error);
       setSearchResult(null);
@@ -182,17 +182,7 @@ function SearchDNSRecord({ contract }) {
                 <span className="text-emerald-400">{searchResult[field]}</span>
               </p>
             ))}
-            <motion.div 
-              className="mt-6 p-4 bg-gray-900 rounded-lg border border-gray-700"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
-            >
-              <p className="mb-2 text-indigo-400">Attestations:</p>
-              <ul>{attested_data}</ul>
-              <p className="mb-2 mt-4 text-indigo-400">Txn Hash:</p>
-              <ul>{attested_txn}</ul>
-            </motion.div>
+            
             <motion.div 
               className="mt-6 p-4 bg-gray-900 rounded-lg border border-gray-700"
               initial={{ opacity: 0 }}
@@ -218,6 +208,7 @@ function SearchDNSRecord({ contract }) {
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 flex items-center justify-center"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
+            disabled
           >
             <Key className="mr-2" size={18} />
             {verificationMsg}

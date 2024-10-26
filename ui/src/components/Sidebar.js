@@ -7,7 +7,7 @@ function Sidebar({ activeTab, setActiveTab }) {
     { id: 'home', name: 'Home', icon: Home },
     { id: 'add', name: 'Add DNS Record', icon: Plus },
     { id: 'search', name: 'Search and Query DNS Record', icon: Search },
-    { id: 'topicmessages', name: 'Mirror nodes  Attestations  Schemas  Reputation', icon: MessageSquare },
+    // { id: 'topicmessages', name: 'Mirror nodes  Attestations  Schemas  Reputation', icon: MessageSquare },
     { id: 'ssvmetrics', name: 'SSV Metrics', icon: BarChart2 },
     { id: 'enviometrics', name: 'Aggregated Envio Hyper Sync Metrics', icon: Activity },
   ];

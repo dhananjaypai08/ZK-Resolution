@@ -1,0 +1,7 @@
+def main(field set_distance, field user_distance) -> bool {
+    bool mut res = false;
+    bool y = user_distance<=set_distance ? true : false;
+    assert(y);
+    return y;
+}
+

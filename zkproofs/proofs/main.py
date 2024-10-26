@@ -38,9 +38,12 @@ async def compile_circuit():
     except subprocess.CalledProcessError as e:
         return {"Errormessage": e}
 
-@app.get("/generate_witness")
-async def generate_witness(set_distance, usr_latitude, usr_longitude, domain_lat, domain_long):
+@app.post("/generate_witness")
+async def generate_witness(request: Request):
     try:
+        body = await request.json()
+        
+        set_distance, usr_latitude, usr_longitude, domain_lat, domain_long = int(body["set_distance"]), float(body["usr_latitude"]), float(body["usr_longitude"]), float(body["domain_lat"]), float(body["domain_long"])
         user_distance = ((usr_latitude-domain_lat)**2 + (usr_longitude-domain_long)**2)**(1/2)
         [set_distance, int(user_distance)]
         data = [set_distance, int(user_distance)]

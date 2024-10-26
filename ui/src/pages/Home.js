@@ -201,7 +201,7 @@ function Home() {
         <div className="flex flex-col gap-4">
           <w3m-button />
           
-          <button
+          {/* <button
             type="button"
             className="w-1/2 max-w-sm bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-md transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 flex items-center justify-center"
             onClick={connectKeplr}
@@ -213,7 +213,7 @@ function Home() {
             <p className="text-gray-400">
               Keplr Address: <span className="font-mono text-purple-400">{keplrAddress}</span>
             </p>
-          )}
+          )} */}
         </div>
 
         {isConnected && (
@@ -225,7 +225,7 @@ function Home() {
         {activeTab === 'home' && <Landing />}
         {activeTab === 'add' && <AddDNSRecord contractData={contractData} connectedAddress={address} walletProvider={walletProvider} />}
         {activeTab === 'search' && <SearchDNSRecord contract={contract}/>}
-        {activeTab === 'topicmessages' && <TopicMessages topicId="0.0.4790189" />}
+        {/* {activeTab === 'topicmessages' && <TopicMessages topicId="0.0.4790189" />} */}
         {activeTab === 'ssvmetrics' && <SSVMetrics />}
         {activeTab === 'enviometrics' && <EnvioMetrics />}
 
