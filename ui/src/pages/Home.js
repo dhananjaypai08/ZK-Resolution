@@ -8,7 +8,7 @@ import SearchDNSRecord from '../components/SearchDNSRecord';
 import TopicMessages from '../components/TopicMessages';
 import SSVMetrics from '../components/SSVMetrics';
 import EnvioMetrics from '../components/EnvioHypersyncDashboard';
-import abiFhenix from "../contracts/ZKDNSFhenix.json";
+// import abiFhenix from "../contracts/ZKDNSFhenix.json";
 import abiHedera from "../contracts/ZKDNS.json";
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers/react';
 import { useWeb3ModalProvider, useWeb3ModalAccount, useDisconnect, useWeb3Modal } from '@web3modal/ethers/react';
@@ -135,12 +135,7 @@ function Home() {
           const ethersProvider = new ethers.BrowserProvider(walletProvider);
           const network = await ethersProvider.getNetwork();
           
-          let abi;
-          if(parseInt(network.chainId) === 296){
-            abi = abiHedera;
-          } else{
-            abi = abiFhenix;
-          }
+          let abi= abiHedera;
 
           const signer = await ethersProvider.getSigner();
           const contract = new ethers.Contract(abi.address, abi.abi, ethersProvider);

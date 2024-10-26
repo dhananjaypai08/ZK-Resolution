@@ -5,19 +5,19 @@ import { BrowserProvider, Contract } from "ethers";
 import axios from 'axios';
 import { Save, Loader, Upload, Key, Server, Globe, ExternalLinkIcon, AlarmPlusIcon } from 'lucide-react';
 import { useDisconnect, useWeb3Modal } from '@web3modal/ethers/react';
-import { Keyring } from "@polkadot/api";
-import { SDK } from "avail-js-sdk";
-import { WaitFor } from "avail-js-sdk/sdk/transactions";
-import { BN } from "@polkadot/util";
 
 function AddDNSRecord({ contractData, connectedAddress, walletProvider, contractWithSigner }) {
   const [recordType, setRecordType] = useState('DNS');
+  const [latitude, setLatitude] = useState(25.204849);
+  const [longitude, setLongitude] = useState(55.270782);
   const [dnsRecordInput, setDnsRecordInput] = useState({
     domainName: '',
     addressResolver: '',
     dnsRecorderType: '',
     expiry: '',
-    contact: ''
+    contact: '',
+    delay_time: '',
+    maximum_distance: ''
   });
   const [loading, setLoading] = useState(false);
   const { disconnect } = useDisconnect();
@@ -33,20 +33,12 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
   const [isZKWidgetOpen, setIsZKWidgetOpen] = useState(false);
   const [isHedera, setHedera] = useState(false);
   const [isFhenix, setFhenix] = useState(true);
-  const [avail_data, setAvailData] = useState();
-  const [avail_data_hash, setAvailDataHash] = useState(); 
-  const [avail_block_hash, setAvailBlockHash] = useState();
-  const [avail_source, setAvailSource] = useState(); 
-  const [avail_txn_hash, setAvailTxnHash] = useState();
-  const [avail_stake_msg, setStakedMessage] = useState();
+  const [sbt_minted, setSBTMinted] = useState(false);
   const [staked_status, stakedStatus] = useState(false);
   const [transaction_hash, setTransactionHash] = useState();
   const [basinHash, setBasinHash] = useState();
 
-  const [total_mints, setTotalMints] = useState(1); // can only mint one SBT at a time
-  const [quality_mints, setQualityMints] = useState(1);
   const [userId, setUserId] = useState(1);
-  const [rollupMsg, setrollupMsg] = useState("");
 
   // IPFS configuration
   const projectId = '2WCbZ8YpmuPxUtM6PzbFOfY5k4B';
@@ -73,7 +65,19 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
     localStorage.setItem("attestationId", defaultAttestationId);
     localStorage.setItem("attestationHash", defaultAttestationHash);
     localStorage.setItem("schemaId", defaultSchemaId);
-  }, [])
+
+    fetch('https://ipapi.co/json/')
+    .then(response => response.json())
+    .then(data => {
+      setLatitude(data.latitude);
+      setLongitude(data.longitude);
+    })
+    .catch(error => {
+      console.error('Error getting location:', error);
+    });
+  }, []);
+
+ 
 
   const defaultValues = {
     DNS: {
@@ -81,14 +85,18 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
       addressResolver: '8.8.8.8',
       dnsRecorderType: 'A',
       expiry: '2025-12-31',
-      contact: 'admin@google.com'
+      contact: 'admin@google.com',
+      delay_time: 10,
+      maximum_distance: 100000
     },
     ENS: {
       domainName: 'vitalik.eth',
       addressResolver: '0x714f39f40c0d7470803fd1bfd8349747f045a7fe',
       dnsRecorderType: 'ETH',
       expiry: '2030-01-01',
-      contact: 'vitalik@ethereum.org'
+      contact: 'vitalik@ethereum.org',
+      delay_time: 10,
+      maximum_distance: 100000
     }
   };
 
@@ -96,127 +104,127 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
     setDnsRecordInput(defaultValues[recordType]);
   };
 
-  const createReputationRollup = async(id) => {
-    const repdata = {id: userId, total_mints: total_mints, quality_mints: quality_mints};
-    console.log(repdata);
-    if(userId == id){
-      const rep = await axios.post("http://localhost:5050/createRepScore", repdata);
-      console.log(rep);
-      setrollupMsg(rep.data);
-    } else{
-      const rep = await axios.post("http://localhost:5050/updateRepScore", repdata);
-      console.log(rep);
-      setrollupMsg(rep.data);
-    }
+  // const createReputationRollup = async(id) => {
+  //   const repdata = {id: userId, total_mints: total_mints, quality_mints: quality_mints};
+  //   console.log(repdata);
+  //   if(userId == id){
+  //     const rep = await axios.post("http://localhost:5050/createRepScore", repdata);
+  //     console.log(rep);
+  //     setrollupMsg(rep.data);
+  //   } else{
+  //     const rep = await axios.post("http://localhost:5050/updateRepScore", repdata);
+  //     console.log(rep);
+  //     setrollupMsg(rep.data);
+  //   }
     
-  }
+  // }
 
-  const getAvailAccount = async() =>{
-    const providerEndpoint = "wss://turing-rpc.avail.so/ws";
-    const sdk = await SDK.New(providerEndpoint);
-    const Alice = "hire surround effort inject present pave drive divide spend sense stable axis";//"great demand return riffle athlete refuse wine vibrant shuffle diamond fix bag"//process.env.REACT_APP_AVAIL_MNEMONIC;
-    const account = new Keyring({ type: "sr25519" }).addFromUri(Alice);
-    return {account: account, sdk: sdk};
-  }
+  // const getAvailAccount = async() =>{
+  //   const providerEndpoint = "wss://turing-rpc.avail.so/ws";
+  //   const sdk = await SDK.New(providerEndpoint);
+  //   const Alice = "hire surround effort inject present pave drive divide spend sense stable axis";//"great demand return riffle athlete refuse wine vibrant shuffle diamond fix bag"//process.env.REACT_APP_AVAIL_MNEMONIC;
+  //   const account = new Keyring({ type: "sr25519" }).addFromUri(Alice);
+  //   return {account: account, sdk: sdk};
+  // }
 
-  const stakeAvail = async() => {
-    setStakedMessage("Staking Avail please wait...");
-    const {account, sdk} = await getAvailAccount();
-    const value = new BN(100).mul(new BN(10).pow(new BN("18")));
-    const payee = "Staked";
-    const result = await sdk.tx.staking.bond(value, payee, WaitFor.BlockInclusion, account);
-    if (result.isErr) {
-      console.log(result.reason);
-      setStakedMessage(result.reason);
-    }
+  // const stakeAvail = async() => {
+  //   setStakedMessage("Staking Avail please wait...");
+  //   const {account, sdk} = await getAvailAccount();
+  //   const value = new BN(100).mul(new BN(10).pow(new BN("18")));
+  //   const payee = "Staked";
+  //   const result = await sdk.tx.staking.bond(value, payee, WaitFor.BlockInclusion, account);
+  //   if (result.isErr) {
+  //     console.log(result.reason);
+  //     setStakedMessage(result.reason);
+  //   }
  
-    // console.log("Stash=" + result.event.stash + ", Amount=" + result.event.amount);
-    console.log("TxHash=" + result.txHash + ", BlockHash=" + result.blockHash);
-    setStakedMessage("Staked Avail: TxnHash="+"0x16f098383b2ccc8b2562a35d2f7c6cddff23cefc6e62823deb3a20503f7f9f24");
-    stakedStatus(true);
-  }
+  //   // console.log("Stash=" + result.event.stash + ", Amount=" + result.event.amount);
+  //   console.log("TxHash=" + result.txHash + ", BlockHash=" + result.blockHash);
+  //   setStakedMessage("Staked Avail: TxnHash="+"0x16f098383b2ccc8b2562a35d2f7c6cddff23cefc6e62823deb3a20503f7f9f24");
+  //   stakedStatus(true);
+  // }
 
-  const unbondAvail = async() => {
-    setStakedMessage("Adding staked avail back to your account. Please wait...");
-    const {account, sdk} = await getAvailAccount();
-    const value = new BN(100).mul(new BN(10).pow(new BN("18")));
-    const result = await sdk.tx.staking.unbond(value, WaitFor.BlockInclusion, account)
-    if (result.isErr) {
-      console.log(result.reason);
-      setStakedMessage(result.reason);
-    }
+  // const unbondAvail = async() => {
+  //   setStakedMessage("Adding staked avail back to your account. Please wait...");
+  //   const {account, sdk} = await getAvailAccount();
+  //   const value = new BN(100).mul(new BN(10).pow(new BN("18")));
+  //   const result = await sdk.tx.staking.unbond(value, WaitFor.BlockInclusion, account)
+  //   if (result.isErr) {
+  //     console.log(result.reason);
+  //     setStakedMessage(result.reason);
+  //   }
   
-    // console.log("Stash=" + result.event.stash + ", Amount=" + result.event.amount);
-    console.log("TxHash=" + result.txHash + ", BlockHash=" + result.blockHash);
-    setStakedMessage("Staked Avail: TxnHash="+result.txHash);
-    stakedStatus(false);
-  }
+  //   // console.log("Stash=" + result.event.stash + ", Amount=" + result.event.amount);
+  //   console.log("TxHash=" + result.txHash + ", BlockHash=" + result.blockHash);
+  //   setStakedMessage("Staked Avail: TxnHash="+result.txHash);
+  //   stakedStatus(false);
+  // }
 
-  const connectAndSendDataToAvail = async(data) => {
-    const providerEndpoint = "wss://turing-rpc.avail.so/ws";
-    const sdk = await SDK.New(providerEndpoint);
-    console.log(sdk);
-    const Alice = "hire surround effort inject present pave drive divide spend sense stable axis";//"great demand return riffle athlete refuse wine vibrant shuffle diamond fix bag"//process.env.REACT_APP_AVAIL_MNEMONIC;
-    const account = new Keyring({ type: "sr25519" }).addFromUri(Alice);
-    // const key = "Dj-Avail";
-    // const result = await sdk.tx.dataAvailability.createApplicationKey(key, WaitFor.BlockInclusion, account);
-    const result = await sdk.tx.dataAvailability.submitData(data, WaitFor.BlockInclusion, account);
-    if (result.isErr) {
-      console.log(result.reason);
-    } else{
-      console.log("Data=" + result.txData.data);
-      console.log("Who=" + result.event.who + ", DataHash=" + result.event.dataHash);
-      console.log("TxHash=" + result.txHash + ", BlockHash=" + result.blockHash);
-      setAvailData(result.txData.data);
-      setAvailSource(result.event.who);
-      setAvailBlockHash(`https://explorer.avail.so/#/explorer/query/${result.blockHash}`);
-      setAvailTxnHash(result.txHash);
-      setAvailDataHash(result.event.dataHash);
-    }
-  }
+  // const connectAndSendDataToAvail = async(data) => {
+  //   const providerEndpoint = "wss://turing-rpc.avail.so/ws";
+  //   const sdk = await SDK.New(providerEndpoint);
+  //   console.log(sdk);
+  //   const Alice = "hire surround effort inject present pave drive divide spend sense stable axis";//"great demand return riffle athlete refuse wine vibrant shuffle diamond fix bag"//process.env.REACT_APP_AVAIL_MNEMONIC;
+  //   const account = new Keyring({ type: "sr25519" }).addFromUri(Alice);
+  //   // const key = "Dj-Avail";
+  //   // const result = await sdk.tx.dataAvailability.createApplicationKey(key, WaitFor.BlockInclusion, account);
+  //   const result = await sdk.tx.dataAvailability.submitData(data, WaitFor.BlockInclusion, account);
+  //   if (result.isErr) {
+  //     console.log(result.reason);
+  //   } else{
+  //     console.log("Data=" + result.txData.data);
+  //     console.log("Who=" + result.event.who + ", DataHash=" + result.event.dataHash);
+  //     console.log("TxHash=" + result.txHash + ", BlockHash=" + result.blockHash);
+  //     setAvailData(result.txData.data);
+  //     setAvailSource(result.event.who);
+  //     setAvailBlockHash(`https://explorer.avail.so/#/explorer/query/${result.blockHash}`);
+  //     setAvailTxnHash(result.txHash);
+  //     setAvailDataHash(result.event.dataHash);
+  //   }
+  // }
 
 
-  const attestDnsInput = async () => {
-    try {
-      const attestresponse = await axios.post("http://localhost:4000/createattestation", dnsRecordInput);
-      setAttestationDetails({
-        "txnHash": attestresponse.data.txnHash,
-        "AttestationId": attestresponse.data.attestationId
-      });
-      localStorage.setItem("topicId", attestresponse.data.attestationId);
-    } catch {
-      setAttestationDetails({
-        "txnHash": "0xb25574b3c2a659e97e784b7d506a6672443374add8a51d6328ec008a4a5f259f",
-        "AttestationId": "0x13d"
-      });
-    }
-  };
+  // const attestDnsInput = async () => {
+  //   try {
+  //     const attestresponse = await axios.post("http://localhost:4000/createattestation", dnsRecordInput);
+  //     setAttestationDetails({
+  //       "txnHash": attestresponse.data.txnHash,
+  //       "AttestationId": attestresponse.data.attestationId
+  //     });
+  //     localStorage.setItem("topicId", attestresponse.data.attestationId);
+  //   } catch {
+  //     setAttestationDetails({
+  //       "txnHash": "0xb25574b3c2a659e97e784b7d506a6672443374add8a51d6328ec008a4a5f259f",
+  //       "AttestationId": "0x13d"
+  //     });
+  //   }
+  // };
 
-  const sendSBTDirect = async () => {
+  const sendSBTDirect = async (e) => {
+    event.preventDefault();
     setLoading(true);
     setHedera(true);
     setFhenix(false);
     const updatedJSON = `{
       "name": "${dnsRecordInput.domainName}",
-      "description": "Address Resolver: ${dnsRecordInput.addressResolver}\n Record Type: ${dnsRecordInput.dnsRecorderType}\n Expiry: ${dnsRecordInput.expiry}",
+      "description": "Address Resolver: ${dnsRecordInput.addressResolver}\n Record Type: ${dnsRecordInput.dnsRecorderType}\n Expiry: ${dnsRecordInput.expiry}\n Maximum Distance: ${dnsRecordInput.maximum_distance}m",
       "image": "${dnsRecordInput.contact}"
     }`;
-    setTxnMsg("Attesting a new SBT...");
-    try {
-      await attestDnsInput();
-    } catch {
-      setAttestationDetails({
-        "txnHash": "0xb25574b3c2a659e97e784b7d506a6672443374add8a51d6328ec008a4a5f259f",
-        "AttestationId": "0x13d"
-      });
-    }
-    setAttestationstatus(true);
-    setTxnMsg("Adding data to Basin Object store");
+    // setTxnMsg("Attesting a new SBT...");
+    // try {
+    //   await attestDnsInput();
+    // } catch {
+    //   setAttestationDetails({
+    //     "txnHash": "0xb25574b3c2a659e97e784b7d506a6672443374add8a51d6328ec008a4a5f259f",
+    //     "AttestationId": "0x13d"
+    //   });
+    // }
+    // setAttestationstatus(true);
+    setTxnMsg("Adding data to IPFS");
     const result = await ipfs_client.add(updatedJSON);
     const cid = result.cid.toString();
-    //const result = await axios.post("http://localhost:8000/adddatatobasin");
-    // const cid = result.data;
-    setTxnMsg("Uploading on-chain via Hedera testnet");
+    setBasinHash(`https://skywalker.infura-ipfs.io/ipfs/${cid}`);
+    setTxnMsg("Uploading domain on-chain and minting SBT");
     const newprovider = new BrowserProvider(walletProvider);
     const contract = new Contract(contractData.address, contractData.abi, newprovider);
     const newsigner = await newprovider.getSigner();
@@ -232,33 +240,6 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
       dnsRecordInput.contact
     );
     await tx.wait();
-    setTxnMsg("Sending acknowledgement to topic");
-    const message = `Attestation details - Transaction Hash: ${attestationdetails['txnHash']}  AttestationId: ${attestationdetails['AttestationId']}`;
-    const messagedata = { message: message };
-    let response;
-    try {
-      response = await axios.post("http://localhost:4000/sendMessage", messagedata);
-    } catch {
-      response = {
-        "data": {
-          "topicId": "0.0.4790189",
-          "transactionStatus": "Success",
-          "attestationHash": attestationdetails['txnHash'],
-          "attestationId": attestationdetails['AttestationId']
-        }
-      };
-    }
-    
-    const topicdata = response.data;
-    const topicId = topicdata["topicId"];
-    setMintedLinks(topicdata);
-    localStorage.setItem("topicId", topicId);
-    setTxnMsg("Sending data to AVAIL DA");
-    await connectAndSendDataToAvail(topicId);
-    setTxnMsg(`Adding data to rollup using stackr with Avail DA layer`);
-    setTotalMints(1);
-    setQualityMints(1); // Domain minting is a one-time one minting process
-    await createReputationRollup(userId);
     
     setMinted(true);
     setDnsRecordInput({
@@ -266,10 +247,15 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
       addressResolver: '',
       dnsRecorderType: '',
       expiry: '',
-      contact: ''
+      contact: '',
+      delay_time: '',
+      longitude: '',
+      latitude: '',
     });
+    setTransactionHash(`https://www.mintscan.io/evmos-testnet/tx/${tx.hash}`);
     setLoading(false);
     setHedera(false);
+    setSBTMinted(true);
   };
 
   function stringToInteger(str) {
@@ -448,7 +434,7 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
           Populate Default Values
         </motion.button>
       </div>
-      <form onSubmit={addDNSRecord} className="space-y-4">
+      <form onSubmit={sendSBTDirect} className="space-y-4">
         <input
           type="text"
           placeholder="To Address"
@@ -457,7 +443,7 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
           className="w-full p-3 bg-gray-700 text-gray-300 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           required
         />
-        {['domainName', 'addressResolver', 'dnsRecorderType', 'expiry', 'contact'].map((field) => (
+        {['domainName', 'addressResolver', 'dnsRecorderType', 'expiry', 'contact', 'delay_time', 'maximum_distance'].map((field) => (
           <motion.input
             key={field}
             type="text"
@@ -470,7 +456,9 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.3 }}
           />
-        ))}
+        ))
+        }
+
         <motion.button
           type="submit"
           className="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-4 rounded-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50 flex items-center justify-center"
@@ -515,33 +503,13 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
 
 
       <AnimatePresence>
-        {isMinted && !loading && (isFhenix || isHedera) && (
+        {sbt_minted && !loading && (
           <motion.div
             className="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-700"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
           >
-            <p className="text-gray-300 whitespace-pre-wrap">Transaction Hash: https://hashscan.io/testnet/transaction/{mintedLink[0]}</p>
-            <p className="text-gray-300 whitespace-pre-wrap">Transaction Receipt: {mintedLink[1]}</p>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      <AnimatePresence>
-        {rollupMsg && !loading && (
-          <motion.div
-            className="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-700"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-          >
-            <p className="text-gray-300 whitespace-pre-wrap">
-              acknowledgement Hash from stackr rollup: {rollupMsg.ack.hash}
-            </p>
-            <p className="text-gray-300 whitespace-pre-wrap">
-              Operator: {rollupMsg.ack.operator}
-            </p>
             <a 
           className="text-indigo-400 hover:text-indigo-300 transition-colors duration-200 flex items-center mb-4" 
           target='_blank' 
@@ -556,9 +524,9 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
           href= {basinHash}
           rel="noopener noreferrer"
         >
-          Basin object data Hash <ExternalLinkIcon className="ml-1" size={16} />
+          IPFS data Hash <ExternalLinkIcon className="ml-1" size={16} />
         </a>
-        <a 
+        {/* <a 
           className="text-indigo-400 hover:text-indigo-300 transition-colors duration-200 flex items-center mb-4" 
           target='_blank' 
           href= {avail_block_hash}
@@ -567,7 +535,7 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
           Txn on AVAIL Block Explorer <ExternalLinkIcon className="ml-1" size={16} />
         </a>
         
-            <p className="text-gray-300 whitespace-pre-wrap">Avail Data Hash: {avail_data_hash}</p>
+            <p className="text-gray-300 whitespace-pre-wrap">Avail Data Hash: {avail_data_hash}</p> */}
           </motion.div>
         )}
       </AnimatePresence>

@@ -10,7 +10,6 @@ function Sidebar({ activeTab, setActiveTab }) {
     { id: 'topicmessages', name: 'Mirror nodes  Attestations  Schemas  Reputation', icon: MessageSquare },
     { id: 'ssvmetrics', name: 'SSV Metrics', icon: BarChart2 },
     { id: 'enviometrics', name: 'Aggregated Envio Hyper Sync Metrics', icon: Activity },
-    { id: 'chatai', name: 'Chat with our AI knowledge Base', icon: MessageSquareText },
   ];
 
   return (

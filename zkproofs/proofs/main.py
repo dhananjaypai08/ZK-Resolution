@@ -3,6 +3,12 @@ import subprocess
 import json
 import uvicorn
 from fastapi.middleware.cors import CORSMiddleware
+# DNS and ENS imports 
+import dns.message
+import dns.query
+import dns.resolver
+import dns
+
 
 app = FastAPI()
 
@@ -70,7 +76,36 @@ async def verify_proof():
                                 capture_output=True)
         return {"message": "Proof is verified", "output": result.stdout}
     except Exception as e:
-        return {"Errormessage": e}
+        return {"Errormessage": e} 
+    
+@app.get("/forwardToResolver")
+def forward_to_dns_resolver(domain: str, address_resolver: str, resolver_port=53):
+    # Create a new DNS query message in traditional way
+    print(domain, address_resolver)
+    if not address_resolver or address_resolver=="null" or len(address_resolver.split("."))<4:
+        address_resolver = "8.8.8.8" #default
+    query = dns.message.make_query(domain, dns.rdatatype.A)
+
+    try:
+        # Send the query to the DNS resolver
+        response = dns.query.udp(query, address_resolver, port=resolver_port, timeout=5)
+
+        # Check if we got a valid response
+        if response.rcode() == dns.rcode.NOERROR:
+            # Extract the IP addresses from the answer section
+            ip_addresses = []
+            for answer in response.answer:
+                for item in answer.items:
+                    if item.rdtype == dns.rdatatype.A:
+                        ip_addresses.append(item.address)
+            
+            return ip_addresses
+        else:
+            return f"DNS query failed with response code: {dns.rcode.to_text(response.rcode())}"
+    except dns.exception.Timeout:
+        return "DNS query timed out"
+    except Exception as e:
+        return f"An error occurred: {str(e)}"
 
 if __name__ == "__main__":
     uvicorn.run("main:app", port=8000, reload=True)
