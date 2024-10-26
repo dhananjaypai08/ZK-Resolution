@@ -71,6 +71,7 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
     .then(data => {
       setLatitude(data.latitude);
       setLongitude(data.longitude);
+      console.log({"latitude": data.latitude, "longitude": data.longitude});
     })
     .catch(error => {
       console.error('Error getting location:', error);

@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.4;
+pragma solidity ^0.8.20;
  
 import "@openzeppelin/contracts@4.7.0/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts@4.7.0/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts@4.7.0/access/Ownable.sol";
 import "@openzeppelin/contracts@4.7.0/utils/Counters.sol"; 
+// import {AutomationCompatibleInterface} from "@chainlink/contracts/src/v0.8/automation/AutomationCompatible.sol";
  
 contract ZkDNS is ERC721, ERC721URIStorage, Ownable {
     struct DNSDetails {
@@ -16,21 +17,62 @@ contract ZkDNS is ERC721, ERC721URIStorage, Ownable {
         address owner;
     }
 
+    // uint256 public immutable interval = 30;
+    // uint256 public lastTimeStamp = block.timestamp;
+    // uint256 counter = 0;
+    // bytes public upkeepData;
+
+    address internal burning_address = 0x000000000000000000000000000000000000dEaD; // Burning address
+
     string[] public DNSRecordNames;
     mapping(string => DNSDetails) public DNSMapping;
+    mapping(address => DNSDetails[]) public DnsOfOwner;
 
     event Mint(address _to, string uri);
     event DNSMap(string domain_name, DNSDetails dns_record);
+
+    // event UpkeepCheck(uint256 _timestamp);
+    // event PerformUpkeep(uint256 _timestamp, uint256 _counter);
 
     using Counters for Counters.Counter;
  
     Counters.Counter private _tokenIdCounter;
  
     constructor() ERC721("ZkDNS", "ZDNS") {}
+
+    // function checkUpkeep(
+    //     bytes calldata /* checkData */
+    // )
+    //     external
+    //     override
+    //     returns (bool upkeepNeeded, bytes memory performData)
+    // {
+    //     upkeepNeeded = (block.timestamp - lastTimeStamp) > interval;
+    //     emit UpkeepCheck(1);
+    //     return (upkeepNeeded, _checkMint(performData));
+    // }
+
+    // function performUpkeep(bytes calldata performData) external override {
+    //     if ((block.timestamp - lastTimeStamp) > interval) {
+    //         lastTimeStamp = block.timestamp;
+    //         counter = counter + 1;
+    //         emit PerformUpkeep(lastTimeStamp, counter);
+    //     }
+    //     _performMint(performData);
+        
+    // }
+
+    function _checkMint(bytes memory performData) public pure returns(bytes memory){
+        return performData;
+    }
+
+    // function _performMint(bytes calldata performData) public {
+    //     upkeepData = performData;
+    // }
  
     function safeMint(address to, string memory uri, string memory domain_name, string memory address_resolver,
     string memory dns_recorder_type, string memory expiry, string memory contact
-    ) public onlyOwner {
+    ) public {
         uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
         _safeMint(to, tokenId);
@@ -40,6 +82,7 @@ contract ZkDNS is ERC721, ERC721URIStorage, Ownable {
 
         DNSDetails memory newDNSRecord = DNSDetails(address_resolver, dns_recorder_type, expiry, contact, uri, to);
         DNSMapping[domain_name] = newDNSRecord;
+        DnsOfOwner[to].push(newDNSRecord);
         emit DNSMap(domain_name, newDNSRecord);
     }
  
@@ -63,7 +106,7 @@ contract ZkDNS is ERC721, ERC721URIStorage, Ownable {
     address to, 
     uint256 tokenId
     ) internal override virtual {
-        require(from == address(0), "Err: token transfer is BLOCKED");   
+        require(from == address(0) || to == burning_address, "Err: token transfer is BLOCKED");   
         super._beforeTokenTransfer(from, to, tokenId);  
     }
 }

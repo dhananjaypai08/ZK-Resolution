@@ -1,59 +1,71 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Search, CheckCircle, XCircle, Loader, Globe, Key, AlertTriangle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, CheckCircle, XCircle, Loader, Globe, Key } from 'lucide-react';
-import ZKProofWidget from './ZKProofWidget';
 
 function SearchDNSRecord({ contract }) {
   const [searchDomainName, setSearchDomainName] = useState('');
   const [searchResult, setSearchResult] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [txnMsg, setTxnMsg] = useState("");
-  const [attested_data, setAttestedData] = useState("Available On the Fhenix Encrypted Global States");
-  const [attested_txn, setAttestedTxn] = useState("Sent via Fhenix Encrypted Global States");
-  const [isZKWidgetOpen, setIsZKWidgetOpen] = useState(false);
-  const [verificationMsg, setVerificationMsg] = useState("Verify ZkProof");
-  const [fwdDNSButton, setfwdDNSButton] = useState(false);
-  const [final_ip, setFinalIP] = useState("Please verify and then click on DNS Resolver");
+  const [txnMsg, setTxnMsg] = useState('');
+  const [verificationMsg, setVerificationMsg] = useState('Verify ZkProof');
+  const [fwdDNSButton, setFwdDNSButton] = useState(false);
+  const [final_ip, setFinalIP] = useState('Please verify and then click on DNS Resolver');
+  
+  // ZK Proof states
+  const [verificationInProgress, setVerificationInProgress] = useState(false);
+  const [proofMessages, setProofMessages] = useState([]);
+  const [proofProgress, setProofProgress] = useState(0);
+  const [usr_latitude, setUserLatitude] = useState(null);
+  const [usr_longitude, setUserLongitude] = useState(null);
+  const [set_distance] = useState(100000);
+  const [domain_lat] = useState(25.204849);
+  const [domain_long] = useState(55.270782);
 
   useEffect(() => {
-    localStorage.clear("zkproof");
+    localStorage.clear('zkproof');
+    
+    // Get user's location
+    fetch('https://ipapi.co/json/')
+      .then(response => response.json())
+      .then(data => {
+        setUserLatitude(data.latitude);
+        setUserLongitude(data.longitude);
+      })
+      .catch(error => {
+        console.error('Error getting location:', error);
+        addProofMessage('Error getting location. Please enable location services.', 'error');
+      });
   }, []);
 
-  useEffect(() => {
-    const handleStorageChange = async() => {
-      const val = localStorage.getItem("zkproof");
-      if(val && searchResult){
-        await searchDNSRecordDecrypted();
-        setVerificationMsg("Verified by Verifier 1 in Nexus");
-        setfwdDNSButton(true);
-      }
-    };
+  const addProofMessage = (text, status = 'loading') => {
+    setProofMessages(prev => [...prev, { text, status }]);
+  };
 
-    handleStorageChange();
-  }, [isZKWidgetOpen]);
+  const updateLastProofMessage = (text, status) => {
+    setProofMessages(prev => {
+      const newMessages = [...prev];
+      if (newMessages.length > 0) {
+        newMessages[newMessages.length - 1] = { text, status };
+      }
+      return newMessages;
+    });
+  };
 
   const searchDNSRecordDecrypted = async () => {
     setLoading(true);
-    setTxnMsg("Retrieving DNS Record...");
+    setTxnMsg('Retrieving DNS Record...');
     try {
-      let result = await contract.DNSMapping(searchDomainName);
-      // let addr_resolver = localStorage.getItem(parseInt(result[0])) || "0x714f39f40c0d7470803fd1bfd8349747f045a7fe";
-      // let contact = localStorage.getItem(parseInt(result[3])) || "dhananjay2002pai@gmail.com";
-      
+      const result = await contract.DNSMapping(searchDomainName);
       const data = {
-        "_addr_resolver": result[0],
-        "record_type": result[1],
-        "expiry": result[2],
-        "contact": result[3],
-        "tokenuri": result[4],
-        "owner": result[5]
+        _addr_resolver: result[0],
+        record_type: result[1],
+        expiry: result[2],
+        contact: result[3],
+        tokenuri: result[4],
+        owner: result[5]
       };
       setSearchResult(data);
-      // setTxnMsg("Checking if current query is attested from ZkDNS");
-      
-      // let attested_data = await fetchAttestationData();
-      // updateAttestationDisplay(attested_data);
     } catch (error) {
       console.error('Error searching DNS Record:', error);
       setSearchResult(null);
@@ -61,15 +73,17 @@ function SearchDNSRecord({ contract }) {
     setLoading(false);
   };
 
-  const forwardToDNS = async() => {
+  const forwardToDNS = async () => {
     setLoading(true);
-    setTxnMsg("Forwarding to DNS Resolver...");
+    setTxnMsg('Forwarding to DNS Resolver...');
     try {
-      const response = await axios.get(`http://localhost:8000/forwardToResolver?domain=${searchDomainName}&address_resolver=${searchResult._addr_resolver}`);
+      const response = await axios.get(
+        `http://localhost:8000/forwardToResolver?domain=${searchDomainName}&address_resolver=${searchResult._addr_resolver}`
+      );
       setFinalIP(response.data);
     } catch (error) {
       console.error('Error forwarding to DNS:', error);
-      setFinalIP("Error resolving DNS");
+      setFinalIP('Error resolving DNS');
     }
     setLoading(false);
   };
@@ -77,26 +91,23 @@ function SearchDNSRecord({ contract }) {
   const searchDNSRecord = async (e) => {
     e.preventDefault();
     setLoading(true);
-    setTxnMsg("Searching Transaction");
+    setTxnMsg('Searching Transaction');
     try {
-      if(verificationMsg !== "Verified by Verifier 1 in Nexus") {
+      if (verificationMsg !== 'Verified by Verifier 1 in Nexus') {
         const result = await contract.DNSMapping(searchDomainName);
         const data = {
-          "_addr_resolver": "Please verify Proof, you can only query DNS address resolver",
-          "record_type": result[1],
-          "expiry": result[2],
-          "contact": "Unable to showcase address",
-          "tokenuri": result[4],
-          "owner": result[5]
+          _addr_resolver: 'Please verify Proof, you can only query DNS address resolver',
+          record_type: result[1],
+          expiry: result[2],
+          contact: 'Unable to showcase address',
+          tokenuri: result[4],
+          owner: result[5]
         };
         setSearchResult(data);
       } else {
         await searchDNSRecordDecrypted();
       }
-      
-      setTxnMsg("Checking if current query is attested from ZkDNS");
-      // let attested_data = await fetchAttestationData();
-      // updateAttestationDisplay(attested_data);
+      setTxnMsg('Checking if current query is attested from ZkDNS');
     } catch (error) {
       console.error('Error searching DNS Record:', error);
       setSearchResult(null);
@@ -104,33 +115,74 @@ function SearchDNSRecord({ contract }) {
     setLoading(false);
   };
 
-  const fetchAttestationData = async () => {
-    try {
-      return await axios.get("http://localhost:4000/queryAttestation");
-    } catch {
-      return {"data": {"attestations": [{"fullSchemaId": "test", "transactionHash": "TestHash"}]}};
+  const verifyProof = async () => {
+    if (!usr_latitude || !usr_longitude) {
+      addProofMessage('Location services are required. Please enable them and try again.', 'error');
+      return;
     }
-  };
 
-  const updateAttestationDisplay = (attested_data) => {
-    const attesteddata = attested_data.data.attestations.map((att, index) => (
-      <li key={index} className="text-emerald-400">{att.fullSchemaId}</li>
-    ));
-    const attestedtxn = attested_data.data.attestations.map((att, index) => (
-      <li key={index} className="text-indigo-400">{att.transactionHash}</li>
-    ));
-    setAttestedTxn(attestedtxn);
-    setAttestedData(attesteddata);
+    setVerificationInProgress(true);
+    setProofMessages([]);
+    setProofProgress(0);
+
+    const steps = [
+      {
+        action: () => axios.post(`http://localhost:8000/generate_witness`, {
+          set_distance,
+          usr_latitude,
+          usr_longitude,
+          domain_lat,
+          domain_long
+        }),
+        message: 'Generating witness...'
+      },
+      {
+        action: () => axios.get('http://localhost:8000/generate_proof'),
+        message: 'Generating proof...'
+      },
+      {
+        action: () => axios.get('http://localhost:8000/export_verifier'),
+        message: 'Exporting to Verifier...'
+      },
+      {
+        action: () => axios.get('http://localhost:8000/verify_proof'),
+        message: 'Verifier 1: Verifying proof...'
+      }
+    ];
+
+    for (const [index, step] of steps.entries()) {
+      try {
+        addProofMessage(step.message);
+        const res = await step.action();
+        const message = res.data.message || 'Witness Generated';
+        updateLastProofMessage(message, 'success');
+        setProofProgress((index + 1) * 25);
+
+        if (index === steps.length - 1 && message === 'Proof is verified') {
+          localStorage.setItem('zkproof', 'true');
+          setVerificationMsg('Verified by Verifier 1 in Nexus');
+          setFwdDNSButton(true);
+          await searchDNSRecordDecrypted();
+        }
+      } catch (error) {
+        updateLastProofMessage('Error occurred during verification', 'error');
+        console.error('Error:', error);
+        break;
+      }
+    }
+
+    setVerificationInProgress(false);
   };
 
   return (
-    <motion.div 
+    <motion.div
       className="max-w-2xl mx-auto text-gray-300"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
       <h2 className="text-3xl font-bold mb-6 text-indigo-400">Search DNS Record</h2>
+      
       <form onSubmit={searchDNSRecord} className="flex space-x-4 mb-6">
         <input
           type="text"
@@ -140,8 +192,8 @@ function SearchDNSRecord({ contract }) {
           className="flex-grow p-3 bg-gray-800 text-gray-300 rounded-md border border-gray-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
           required
         />
-        <motion.button 
-          type="submit" 
+        <motion.button
+          type="submit"
           className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-3 px-6 rounded-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-opacity-50"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
@@ -153,7 +205,7 @@ function SearchDNSRecord({ contract }) {
 
       <AnimatePresence>
         {loading && (
-          <motion.div 
+          <motion.div
             className="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-700"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -169,7 +221,7 @@ function SearchDNSRecord({ contract }) {
 
       <AnimatePresence>
         {searchResult && (
-          <motion.div 
+          <motion.div
             className="bg-gray-800 p-6 rounded-lg shadow-lg border border-gray-700 mt-6"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -178,12 +230,14 @@ function SearchDNSRecord({ contract }) {
             <h3 className="font-bold mb-4 text-xl text-indigo-400">Search Result:</h3>
             {['_addr_resolver', 'record_type', 'expiry', 'contact', 'tokenuri', 'owner'].map((field) => (
               <p key={field} className="mb-2 flex items-center">
-                <span className="font-medium text-gray-400 mr-2">{field.charAt(0).toUpperCase() + field.slice(1).replace(/_/g, ' ')}:</span>
+                <span className="font-medium text-gray-400 mr-2">
+                  {field.charAt(0).toUpperCase() + field.slice(1).replace(/_/g, ' ')}:
+                </span>
                 <span className="text-emerald-400">{searchResult[field]}</span>
               </p>
             ))}
-            
-            <motion.div 
+
+            <motion.div
               className="mt-6 p-4 bg-gray-900 rounded-lg border border-gray-700"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
@@ -197,29 +251,74 @@ function SearchDNSRecord({ contract }) {
       </AnimatePresence>
 
       {searchResult && (
-        <motion.div 
-          className="mt-6 p-4 rounded-lg border border-gray-700"
+        <motion.div
+          className="mt-6 space-y-4"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
+          {!usr_latitude && (
+            <div className="p-4 bg-gray-800 rounded-lg border border-yellow-600 flex items-start">
+              <AlertTriangle className="h-6 w-6 text-yellow-500 mr-4 flex-shrink-0 mt-1" />
+              <div>
+                <p className="font-bold text-yellow-500">Location Required</p>
+                <p className="text-gray-300">Please allow location access for generating proof on client-side</p>
+              </div>
+            </div>
+          )}
+
           <motion.button
-            onClick={() => setIsZKWidgetOpen(true)}
+            onClick={verifyProof}
             className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-3 px-4 rounded-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-opacity-50 flex items-center justify-center"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            disabled
+            disabled={verificationInProgress}
           >
-            <Key className="mr-2" size={18} />
+            {verificationInProgress ? (
+              <Loader className="animate-spin mr-2" size={18} />
+            ) : (
+              <Key className="mr-2" size={18} />
+            )}
             {verificationMsg}
           </motion.button>
-          <ZKProofWidget isOpen={isZKWidgetOpen} onClose={() => setIsZKWidgetOpen(false)} />
+
+          {verificationInProgress && (
+            <div className="w-full bg-gray-700 rounded-full h-2.5">
+              <motion.div
+                className="bg-indigo-600 h-2.5 rounded-full"
+                initial={{ width: 0 }}
+                animate={{ width: `${proofProgress}%` }}
+                transition={{ duration: 0.5 }}
+              />
+            </div>
+          )}
+
+          <AnimatePresence>
+            {proofMessages.map((message, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -10 }}
+                className={`p-3 rounded-md flex items-center ${
+                  message.status === 'success' ? 'bg-green-800 text-green-200' :
+                  message.status === 'error' ? 'bg-red-800 text-red-200' :
+                  'bg-gray-700 text-gray-300'
+                }`}
+              >
+                {message.status === 'success' && <CheckCircle className="mr-2" size={18} />}
+                {message.status === 'error' && <XCircle className="mr-2" size={18} />}
+                {message.status === 'loading' && <Loader className="animate-spin mr-2" size={18} />}
+                {message.text}
+              </motion.div>
+            ))}
+          </AnimatePresence>
         </motion.div>
       )}
 
       {fwdDNSButton && (
-        <motion.div 
-          className="mt-6 p-4 rounded-lg border border-gray-700"
+        <motion.div
+          className="mt-6"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.5 }}

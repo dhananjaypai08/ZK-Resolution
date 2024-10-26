@@ -1,12 +1,12 @@
 {
   "inputs": [
     {
-      "name": "set_distance",
+      "name": "txnHash",
       "public": true,
       "type": "field"
     },
     {
-      "name": "user_distance",
+      "name": "givenHash",
       "public": true,
       "type": "field"
     }

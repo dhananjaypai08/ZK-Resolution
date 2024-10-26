@@ -1,0 +1,6 @@
+def main(field txnHash, field givenHash) -> bool {
+    bool mut res = false;
+    bool y = txnHash==givenHash ? true : false;
+    assert(y);
+    return y;
+}

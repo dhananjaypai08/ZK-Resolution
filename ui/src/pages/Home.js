@@ -6,8 +6,8 @@ import Landing from './Landing';
 import AddDNSRecord from '../components/AddDNSRecord';
 import SearchDNSRecord from '../components/SearchDNSRecord';
 import TopicMessages from '../components/TopicMessages';
-import SSVMetrics from '../components/SSVMetrics';
-import EnvioMetrics from '../components/EnvioHypersyncDashboard';
+import ChainRegistryDashboard from '../components/ChainRegistryDashboard';
+import IBCTransfer from "../components/IBCTransfer";
 // import abiFhenix from "../contracts/ZKDNSFhenix.json";
 import abiHedera from "../contracts/ZKDNS.json";
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers/react';
@@ -24,6 +24,13 @@ const evmosTestnet = {
   explorerUrl: 'https://testnet.escan.live',
   rpcUrl: 'https://9000.rpc.thirdweb.com/'
 };
+
+const keplr1 = {
+  chainId: "localchain-1",
+  name: "rollchain",
+  explorerUrl: "https://example.com",
+  rpcUrl: "http://127.0.0.1:26657"
+}
 
 const testnet1 = {
   chainId: 296,
@@ -225,9 +232,9 @@ function Home() {
         {activeTab === 'home' && <Landing />}
         {activeTab === 'add' && <AddDNSRecord contractData={contractData} connectedAddress={address} walletProvider={walletProvider} />}
         {activeTab === 'search' && <SearchDNSRecord contract={contract}/>}
-        {/* {activeTab === 'topicmessages' && <TopicMessages topicId="0.0.4790189" />} */}
-        {activeTab === 'ssvmetrics' && <SSVMetrics />}
-        {activeTab === 'enviometrics' && <EnvioMetrics />}
+        {activeTab === 'zkstats' && <TopicMessages />}
+        {activeTab === 'registry' && <ChainRegistryDashboard />}
+        {activeTab === 'ibc-transfer' && <IBCTransfer contractData={contractData} connectedAddress={address} walletProvider={walletProvider}/>}
 
         {loading && (
           <div className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center">

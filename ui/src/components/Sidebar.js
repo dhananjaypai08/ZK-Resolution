@@ -7,9 +7,9 @@ function Sidebar({ activeTab, setActiveTab }) {
     { id: 'home', name: 'Home', icon: Home },
     { id: 'add', name: 'Add DNS Record', icon: Plus },
     { id: 'search', name: 'Search and Query DNS Record', icon: Search },
-    // { id: 'topicmessages', name: 'Mirror nodes  Attestations  Schemas  Reputation', icon: MessageSquare },
-    { id: 'ssvmetrics', name: 'SSV Metrics', icon: BarChart2 },
-    { id: 'enviometrics', name: 'Aggregated Envio Hyper Sync Metrics', icon: Activity },
+    { id: 'ibc-transfer', name: 'Send assets and txn Zkproofs across chains', icon: Activity },
+    { id: 'zkstats', name: 'Zk Stats', icon: MessageSquare },
+    { id: 'registry', name: 'IBC Visualizer', icon: BarChart2 },
   ];
 
   return (
