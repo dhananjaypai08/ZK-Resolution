@@ -23,7 +23,7 @@ function Landing() {
         animate={{ y: 0 }}
         transition={{ delay: 0.2, type: "spring", stiffness: 120 }}
       >
-        Welcome to Zk-POL
+        Welcome to Zk-POL: - Securing DNS resolution through zero-knowledge geometry - where privacy meets proximity
       </motion.h2>
       <motion.p 
         className="mb-8 text-lg"
