@@ -124,12 +124,14 @@ async def send_txn(to: str, amount: int):
 async def query_acc(account: str):
     #subprocess.run(["source <(curl", "-s", "https://raw.githubusercontent.com/strangelove-ventures/interchaintest/main/local-interchain/bash/source.bash)"])
     #result = subprocess.run(["ICT_MAKE_REQUEST", "http://127.0.0.1:1235", "localcosmos-1", "q", "bank", "balances", f"{account}"], capture_output=True)
-    data = {"balances":[{"denom":"ibc/C992393532A70B90B84C403519C959215987C7D6592465C520923F2A2C6AADB5","amount":"1"},{"denom":"uatom","amount":"25000000000"}],"pagination":{"next_key":None,"total":"0"}}
-    return {"message": "IBC Transfer Complete", "output": data}
+    try:
+        
+        data = {"balances":[{"denom":"ibc/C992393532A70B90B84C403519C959215987C7D6592465C520923F2A2C6AADB5","amount":"1"},{"denom":"uatom","amount":"25000000000"}],"pagination":{"next_key":None,"total":"0"}}
+        return {"message": "IBC Transfer Complete", "output": data}
 
 
-    # except Exception as e:
-    #     return {"Errormessage": e} 
+    except Exception as e:
+        return {"Errormessage": e} 
     
 # ZK IBC
 

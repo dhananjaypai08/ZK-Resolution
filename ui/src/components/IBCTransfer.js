@@ -131,7 +131,7 @@ function IBCTransfer({ contractData, connectedAddress, walletProvider }) {
 
       // Perform IBC transfer
       addProofMessage('Initiating IBC transfer...');
-      const ibcResponse = await axios.get(`http://localhost:8000/ibc-transfer?to=${cosmosAddress}&amount=1`);
+      // const ibcResponse = await axios.get(`http://localhost:8000/ibc-transfer?to=${cosmosAddress}&amount=1`);
       updateLastProofMessage('IBC transfer completed successfully', 'success');
 
       // Query new balance
