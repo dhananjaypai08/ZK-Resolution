@@ -1,311 +1,328 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
-  RadialBarChart, RadialBar, PieChart, Pie, Cell
+import {
+  LineChart,
+  Line,
+  AreaChart,
+  Area,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell
 } from 'recharts';
-import { 
-  Globe, Server, Coins, GitBranch, Code, Network, Shield, Database,
-  ChevronDown, ChevronUp, ExternalLink, AlertCircle, Activity, Users,
-  Link, Box, Cpu
+import {
+  TrendingUp,
+  DollarSign,
+  Activity,
+  PieChart as PieChartIcon,
+  ArrowUpRight,
+  ArrowDownRight,
+  Users,
+  Search
 } from 'lucide-react';
 
-const MetricCard = ({ title, icon: Icon, children, className = "" }) => (
-  <motion.div
-    initial={{ opacity: 0, y: 20 }}
-    animate={{ opacity: 1, y: 0 }}
-    className={`bg-gray-800 p-6 rounded-xl border border-indigo-500/20 ${className}`}
-  >
-    <div className="flex items-center space-x-3 mb-4">
-      <Icon className="text-indigo-500" size={24} />
-      <h3 className="text-xl font-semibold">{title}</h3>
-    </div>
-    {children}
-  </motion.div>
-);
+// Mock data
+const volumeData = [
+  { date: '2023-11-01', volume_quote: 156000, volume_native_quote: 85.2 },
+  { date: '2023-11-02', volume_quote: 142000, volume_native_quote: 77.5 },
+  { date: '2023-11-03', volume_quote: 164000, volume_native_quote: 89.6 },
+  { date: '2023-11-04', volume_quote: 185000, volume_native_quote: 101.2 },
+  { date: '2023-11-05', volume_quote: 178000, volume_native_quote: 97.3 },
+  { date: '2023-11-06', volume_quote: 198000, volume_native_quote: 108.4 },
+  { date: '2023-11-07', volume_quote: 211000, volume_native_quote: 115.6 }
+];
+
+const floorPriceData = [
+  { date: '2023-11-01', floor_price_quote: 12500, floor_price_native_quote: 6.8 },
+  { date: '2023-11-02', floor_price_quote: 13200, floor_price_native_quote: 7.2 },
+  { date: '2023-11-03', floor_price_quote: 12800, floor_price_native_quote: 7.0 },
+  { date: '2023-11-04', floor_price_quote: 13500, floor_price_native_quote: 7.4 },
+  { date: '2023-11-05', floor_price_quote: 14200, floor_price_native_quote: 7.8 },
+  { date: '2023-11-06', floor_price_quote: 14800, floor_price_native_quote: 8.1 },
+  { date: '2023-11-07', floor_price_quote: 15100, floor_price_native_quote: 8.3 }
+];
+
+const distributionData = [
+  { name: 'Rare', value: 20 },
+  { name: 'Epic', value: 15 },
+  { name: 'Legendary', value: 10 },
+  { name: 'Common', value: 55 }
+];
+
+const COLORS = ['#6366f1', '#8b5cf6', '#d946ef', '#f472b6'];
 
 const ChainRegistryDashboard = () => {
-  const [chainRegistry, setChainRegistry] = useState(null);
-  const [chainAssets, setChainAssets] = useState(null);
-  const [chainInfo, setChainInfo] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const [activeTimeframe, setActiveTimeframe] = useState('7D');
 
-  const fetchData = async () => {
-    try {
-      const [registryRes, assetsRes, infoRes] = await Promise.all([
-        fetch('http://127.0.0.1:1235/chain_registry'),
-        fetch('http://127.0.0.1:1235/chain_registry_assets'),
-        fetch('http://127.0.0.1:1235/info')
-      ]);
+  const timeframes = ['24H', '7D', '30D', '90D'];
 
-      const registryData = await registryRes.json();
-      const assetsData = await assetsRes.json();
-      const infoData = await infoRes.json();
-
-      setChainRegistry(registryData);
-      setChainAssets(assetsData);
-      setChainInfo(infoData);
-      setLoading(false);
-    } catch (err) {
-      setError('Failed to fetch data');
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    fetchData();
-  }, []);
-
-  // Prepare chain connectivity data
-  const connectivityData = chainInfo?.chains?.map(chain => ({
-    name: chain.chain_name,
-    connections: chain.ibc_paths?.length || 0,
-    rpcStatus: chain.rpc_address ? 'Active' : 'Inactive',
-    apiStatus: chain.rest_address ? 'Active' : 'Inactive'
-  })) || [];
-
-  // Prepare IBC channel status data
-  const ibcStatusData = chainInfo?.logs?.ibc_channels?.map(channel => ({
-    name: channel.chain_id,
-    status: channel.channel.state === 'STATE_OPEN' ? 100 : 0,
-    channelId: channel.channel.channel_id
-  })) || [];
-
-  // Prepare version compatibility data
-  const versionCompatibilityData = [
-    { 
-      name: 'Cosmos SDK',
-      version: chainRegistry?.codebase?.cosmos_sdk_version || '0',
-      compatibility: 100
+  const stats = [
+    {
+      title: 'Total Volume',
+      value: '$1.23M',
+      change: '+12.5%',
+      icon: TrendingUp,
+      positive: true
     },
     {
-      name: 'IBC',
-      version: chainRegistry?.codebase?.ibc_go_version || '0',
-      compatibility: 100
+      title: 'Floor Price',
+      value: '8.3 ETH',
+      change: '+5.2%',
+      icon: DollarSign,
+      positive: true
     },
     {
-      name: 'Tendermint',
-      version: chainRegistry?.codebase?.consensus?.version || '0',
-      compatibility: 100
+      title: 'Unique Holders',
+      value: '3,487',
+      change: '-2.1%',
+      icon: Users,
+      positive: false
+    },
+    {
+      title: 'Sales Count',
+      value: '892',
+      change: '+8.7%',
+      icon: Activity,
+      positive: true
     }
   ];
 
-  // Prepare asset metrics
-  const assetMetrics = chainAssets?.assets?.map(asset => ({
-    name: asset.symbol,
-    denom: asset.base,
-    exponent: asset.denom_units?.[1]?.exponent || 0,
-    hasLogo: asset.logo_URIs ? 100 : 0
-  })) || [];
-
-  const COLORS = ['#6366f1', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
-
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <motion.div
-          animate={{ rotate: 360 }}
-          transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
-          className="w-16 h-16 border-4 border-indigo-500 border-t-transparent rounded-full"
-        />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-red-500 flex items-center space-x-2">
-          <AlertCircle />
-          <span>{error}</span>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-screen bg-gray-900 text-gray-100 p-8">
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="max-w-7xl mx-auto"
-      >
-        {/* Header Section */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-500 to-purple-500 bg-clip-text text-transparent">
-              {chainRegistry?.pretty_name || 'Chain Registry'} Analytics
-            </h1>
-            <div className="flex items-center space-x-2 mt-2">
-              <span className="px-2 py-1 bg-indigo-500/20 rounded-md text-indigo-400">
-                {chainRegistry?.network_type}
-              </span>
-              <span className="px-2 py-1 bg-green-500/20 rounded-md text-green-400">
-                {chainRegistry?.status}
-              </span>
-              <span className="px-2 py-1 bg-purple-500/20 rounded-md text-purple-400">
-                Chain ID: {chainRegistry?.chain_id}
-              </span>
-            </div>
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="px-4 py-2 bg-indigo-600 rounded-lg flex items-center space-x-2"
-            onClick={() => fetchData()}
+    <motion.div
+      className="max-w-7xl mx-auto p-6 text-gray-300"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.5 }}
+    >
+      {/* Header */}
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-3xl font-bold text-indigo-400">NFT Analytics Dashboard</h1>
+        <div className="flex items-center space-x-2 bg-gray-800 rounded-lg p-1">
+          {timeframes.map((timeframe) => (
+            <button
+              key={timeframe}
+              onClick={() => setActiveTimeframe(timeframe)}
+              className={`px-4 py-2 rounded-md transition-all duration-200 ${
+                activeTimeframe === timeframe
+                  ? 'bg-indigo-600 text-white'
+                  : 'text-gray-400 hover:text-white'
+              }`}
+            >
+              {timeframe}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        {stats.map((stat, index) => (
+          <motion.div
+            key={stat.title}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
+            className="bg-gray-800 rounded-lg p-6 border border-gray-700"
           >
-            <Activity size={18} />
-            <span>Refresh Metrics</span>
-          </motion.button>
-        </div>
-
-        {/* Main Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Chain Connectivity Status */}
-          <MetricCard title="Chain Connectivity Status" icon={Network}>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={connectivityData}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis dataKey="name" stroke="#9CA3AF" />
-                  <YAxis stroke="#9CA3AF" />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                  />
-                  <Legend />
-                  <Bar dataKey="connections" name="IBC Connections" fill="#6366f1" />
-                </BarChart>
-              </ResponsiveContainer>
+            <div className="flex items-center justify-between mb-4">
+              <stat.icon className="text-indigo-400" size={24} />
+              <span
+                className={`flex items-center ${
+                  stat.positive ? 'text-green-400' : 'text-red-400'
+                }`}
+              >
+                {stat.positive ? (
+                  <ArrowUpRight size={20} className="mr-1" />
+                ) : (
+                  <ArrowDownRight size={20} className="mr-1" />
+                )}
+                {stat.change}
+              </span>
             </div>
-          </MetricCard>
+            <h3 className="text-gray-400 text-sm mb-1">{stat.title}</h3>
+            <p className="text-2xl font-bold text-white">{stat.value}</p>
+          </motion.div>
+        ))}
+      </div>
 
-          {/* IBC Channel Status */}
-          <MetricCard title="IBC Channel Health" icon={Link}>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <RadialBarChart
-                  innerRadius="30%"
-                  outerRadius="80%"
-                  data={ibcStatusData}
-                  startAngle={180}
-                  endAngle={0}
-                >
-                  <RadialBar
-                    minAngle={15}
-                    background
-                    clockWise={true}
-                    dataKey="status"
-                    label={{ fill: '#fff', position: 'inside' }}
-                  />
-                  <Legend />
-                  <Tooltip />
-                </RadialBarChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="mt-4 text-sm text-gray-400">
-              Shows channel health status (100% = STATE_OPEN)
-            </div>
-          </MetricCard>
-
-          {/* Version Compatibility */}
-          <MetricCard title="Version Compatibility Matrix" icon={Code}>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={versionCompatibilityData} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                  <XAxis type="number" stroke="#9CA3AF" />
-                  <YAxis dataKey="name" type="category" stroke="#9CA3AF" />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                  />
-                  <Legend />
-                  <Bar dataKey="compatibility" name="Version" fill="#10b981">
-                    
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </MetricCard>
-
-          {/* Asset Metrics */}
-          <MetricCard title="Asset Configuration" icon={Coins}>
-            <div className="h-80">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={assetMetrics}
-                    innerRadius={60}
-                    outerRadius={80}
-                    paddingAngle={5}
-                    dataKey="exponent"
-                  >
-                    {assetMetrics.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{ backgroundColor: '#1F2937', border: '1px solid #374151' }}
-                  />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-          </MetricCard>
-
-          {/* Quick Stats */}
-          <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-3 gap-6">
-            <motion.div
-              className="bg-gray-800 p-6 rounded-xl border border-indigo-500/20"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Cpu className="text-indigo-500" />
-                  <h3 className="text-lg font-medium">Active Validators</h3>
-                </div>
-                <span className="text-2xl font-bold">{chainInfo?.chains?.[0]?.number_vals || 0}</span>
-              </div>
-            </motion.div>
-
-            <motion.div
-              className="bg-gray-800 p-6 rounded-xl border border-indigo-500/20"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.1 }}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <Box className="text-purple-500" />
-                  <h3 className="text-lg font-medium">ICS Protocols</h3>
-                </div>
-                <span className="text-2xl font-bold">
-                  {chainRegistry?.codebase?.ics_enabled?.length || 0}
-                </span>
-              </div>
-            </motion.div>
-
-            <motion.div
-              className="bg-gray-800 p-6 rounded-xl border border-indigo-500/20"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2">
-                  <GitBranch className="text-green-500" />
-                  <h3 className="text-lg font-medium">SDK Version</h3>
-                </div>
-                <span className="text-2xl font-bold">
-                  v{chainRegistry?.codebase?.cosmos_sdk_version || '0'}
-                </span>
-              </div>
-            </motion.div>
+      {/* Charts Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+        {/* Volume Chart */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-gray-800 rounded-lg p-6 border border-gray-700"
+        >
+          <h3 className="text-xl font-bold text-indigo-400 mb-6 flex items-center">
+            <Activity className="mr-2" size={20} />
+            Trading Volume
+          </h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={volumeData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis
+                  dataKey="date"
+                  stroke="#9CA3AF"
+                  tick={{ fill: '#9CA3AF' }}
+                />
+                <YAxis stroke="#9CA3AF" tick={{ fill: '#9CA3AF' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1F2937',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    color: '#F3F4F6'
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="volume_quote"
+                  stroke="#6366f1"
+                  fill="#6366f1"
+                  fillOpacity={0.2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
-        </div>
-      </motion.div>
-    </div>
+        </motion.div>
+
+        {/* Floor Price Chart */}
+        <motion.div
+          initial={{ opacity: 0, x: 20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="bg-gray-800 rounded-lg p-6 border border-gray-700"
+        >
+          <h3 className="text-xl font-bold text-indigo-400 mb-6 flex items-center">
+            <DollarSign className="mr-2" size={20} />
+            Floor Price Trends
+          </h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={floorPriceData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis
+                  dataKey="date"
+                  stroke="#9CA3AF"
+                  tick={{ fill: '#9CA3AF' }}
+                />
+                <YAxis stroke="#9CA3AF" tick={{ fill: '#9CA3AF' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1F2937',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    color: '#F3F4F6'
+                  }}
+                />
+                <Line
+                  type="monotone"
+                  dataKey="floor_price_native_quote"
+                  stroke="#8b5cf6"
+                  strokeWidth={2}
+                  dot={{ fill: '#8b5cf6', strokeWidth: 2 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+
+        {/* Distribution Chart */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gray-800 rounded-lg p-6 border border-gray-700"
+        >
+          <h3 className="text-xl font-bold text-indigo-400 mb-6 flex items-center">
+            <PieChartIcon className="mr-2" size={20} />
+            Rarity Distribution
+          </h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={distributionData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                >
+                  {distributionData.map((entry, index) => (
+                    <Cell
+                      key={`cell-${index}`}
+                      fill={COLORS[index % COLORS.length]}
+                    />
+                  ))}
+                </Pie>
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1F2937',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    color: '#F3F4F6'
+                  }}
+                />
+              </PieChart>
+            </ResponsiveContainer>
+            <div className="flex justify-center space-x-4 mt-4">
+              {distributionData.map((entry, index) => (
+                <div key={entry.name} className="flex items-center">
+                  <div
+                    className="w-3 h-3 rounded-full mr-2"
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <span className="text-sm text-gray-400">
+                    {entry.name} ({entry.value}%)
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Sales History */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gray-800 rounded-lg p-6 border border-gray-700"
+        >
+          <h3 className="text-xl font-bold text-indigo-400 mb-6 flex items-center">
+            <Search className="mr-2" size={20} />
+            Sales History
+          </h3>
+          <div className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={volumeData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis
+                  dataKey="date"
+                  stroke="#9CA3AF"
+                  tick={{ fill: '#9CA3AF' }}
+                />
+                <YAxis stroke="#9CA3AF" tick={{ fill: '#9CA3AF' }} />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: '#1F2937',
+                    border: 'none',
+                    borderRadius: '0.5rem',
+                    color: '#F3F4F6'
+                  }}
+                />
+                <Bar dataKey="volume_native_quote" fill="#d946ef" />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
+      </div>
+    </motion.div>
   );
 };
 

@@ -1,15 +1,16 @@
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Home, Plus, Search, MessageSquare, BarChart2, Activity, MessageSquareText } from 'lucide-react';
+import { Home, Plus, Search, MessageSquare, BarChart2, Activity, MessageSquareText, PersonStandingIcon } from 'lucide-react';
 
 function Sidebar({ activeTab, setActiveTab }) {
   const tabs = [
     { id: 'home', name: 'Home', icon: Home },
     { id: 'add', name: 'Add DNS Record', icon: Plus },
     { id: 'search', name: 'Search and Query DNS Record', icon: Search },
+    { id: 'reputation', name: 'Stackr Reputation of Domain Owner', icon: PersonStandingIcon },
     { id: 'ibc-transfer', name: 'Send assets and txn Zkproofs across chains', icon: Activity },
     { id: 'zkstats', name: 'Zk Stats', icon: MessageSquare },
-    { id: 'registry', name: 'IBC Visualizer', icon: BarChart2 },
+    { id: 'registry', name: 'Covalent NFT stats', icon: BarChart2 },
   ];
 
   return (

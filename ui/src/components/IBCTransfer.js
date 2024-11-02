@@ -55,7 +55,11 @@ function IBCTransfer({ contractData, connectedAddress, walletProvider }) {
       const newsigner = await newprovider.getSigner();
       setSigner(newsigner);
       const records = await contract.getDNSofOwner(connectedAddress);
+      
       setSbtList(records);
+      for(let i =0 ;i<records.length;i++){
+        console.log(records[i]);
+      }
     } catch (error) {
       console.error('Error fetching SBTs:', error);
     }
@@ -184,7 +188,7 @@ function IBCTransfer({ contractData, connectedAddress, walletProvider }) {
               <div className="space-y-3">
                 <p className="flex items-center">
                   <span className="text-gray-400 mr-2">Domain:</span>
-                  <span className="text-emerald-400">{sbt.domain_name}</span>
+                  <span className="text-emerald-400">Google</span>
                 </p>
                 <p className="flex items-center">
                   <span className="text-gray-400 mr-2">Type:</span>

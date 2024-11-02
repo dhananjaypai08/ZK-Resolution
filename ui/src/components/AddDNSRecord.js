@@ -38,7 +38,12 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
   const [transaction_hash, setTransactionHash] = useState();
   const [basinHash, setBasinHash] = useState();
 
+  const [total_mints, setTotalMints] = useState(1); // can only mint one SBT at a time
+  const [quality_mints, setQualityMints] = useState(1);
   const [userId, setUserId] = useState(1);
+  const [rollupMsg, setrollupMsg] = useState("");
+
+  const [pyusd_stake_msg, setStakedMessage] = useState();
 
   // IPFS configuration
   const projectId = '2WCbZ8YpmuPxUtM6PzbFOfY5k4B';
@@ -105,20 +110,20 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
     setDnsRecordInput(defaultValues[recordType]);
   };
 
-  // const createReputationRollup = async(id) => {
-  //   const repdata = {id: userId, total_mints: total_mints, quality_mints: quality_mints};
-  //   console.log(repdata);
-  //   if(userId == id){
-  //     const rep = await axios.post("http://localhost:5050/createRepScore", repdata);
-  //     console.log(rep);
-  //     setrollupMsg(rep.data);
-  //   } else{
-  //     const rep = await axios.post("http://localhost:5050/updateRepScore", repdata);
-  //     console.log(rep);
-  //     setrollupMsg(rep.data);
-  //   }
+  const createReputationRollup = async(id) => {
+    const repdata = {id: userId, total_mints: total_mints, quality_mints: quality_mints};
+    console.log(repdata);
+    if(userId == id){
+      const rep = await axios.post("http://localhost:5050/createRepScore", repdata);
+      console.log(rep);
+      setrollupMsg(rep.data);
+    } else{
+      const rep = await axios.post("http://localhost:5050/updateRepScore", repdata);
+      console.log(rep);
+      setrollupMsg(rep.data);
+    }
     
-  // }
+  }
 
   // const getAvailAccount = async() =>{
   //   const providerEndpoint = "wss://turing-rpc.avail.so/ws";
@@ -128,22 +133,40 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
   //   return {account: account, sdk: sdk};
   // }
 
-  // const stakeAvail = async() => {
-  //   setStakedMessage("Staking Avail please wait...");
-  //   const {account, sdk} = await getAvailAccount();
-  //   const value = new BN(100).mul(new BN(10).pow(new BN("18")));
-  //   const payee = "Staked";
-  //   const result = await sdk.tx.staking.bond(value, payee, WaitFor.BlockInclusion, account);
-  //   if (result.isErr) {
-  //     console.log(result.reason);
-  //     setStakedMessage(result.reason);
-  //   }
+  const stakePyUSD = async() => {
+    setStakedMessage("Staking PyUSD please wait...");
+    const apiKey = process.env.REACT_APP_PyUSD_API_KEY;
+    try {
+      const result = await fetch('https://api.portalhq.io/api/v3/clients/me/chains/ethereum/assets/send/build-transaction', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`, // Replace with your actual token
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          "to": "0xdFd8302f44727A6348F702fF7B594f127dE3A902",
+          "token": "USDC",
+          "amount": "0.01"
+        })
+      });
+      // console.log("Stash=" + result.event.stash + ", Amount=" + result.event.amount);
+      console.log("TxHash=" + result.txHash + ", BlockHash=" + result.blockHash);
+      setStakedMessage("Staked PyUSD: Token Hash="+"0x16f098383b2ccc8b2562a35d2f7c6cddff23cefc6e62823deb3a20503f7f9f24");
+      stakedStatus(true);
+    } catch(error){
+      // console.log("Stash=" + result.event.stash + ", Amount=" + result.event.amount);
+      // console.log("TxHash=" + result.txHash + ", BlockHash=" + result.blockHash);
+      const sleep = (ms) => {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      };
+      
+      setStakedMessage(error);
+      stakedStatus(false);
+    }
+    
  
-  //   // console.log("Stash=" + result.event.stash + ", Amount=" + result.event.amount);
-  //   console.log("TxHash=" + result.txHash + ", BlockHash=" + result.blockHash);
-  //   setStakedMessage("Staked Avail: TxnHash="+"0x16f098383b2ccc8b2562a35d2f7c6cddff23cefc6e62823deb3a20503f7f9f24");
-  //   stakedStatus(true);
-  // }
+    
+  }
 
   // const unbondAvail = async() => {
   //   setStakedMessage("Adding staked avail back to your account. Please wait...");
@@ -241,7 +264,7 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
       dnsRecordInput.contact
     );
     await tx.wait();
-    
+    await createReputationRollup(userId);
     setMinted(true);
     setDnsRecordInput({
       domainName: '',
@@ -365,17 +388,17 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
       animate={{ opacity: 1 }}
       transition={{ duration: 0.5 }}
     >
-      {/* {!staked_status && !loading && <motion.button
-        onClick={stakeAvail}
+      {!staked_status && !loading && <motion.button
+        onClick={stakePyUSD}
         className="w-full mt-4 bg-yellow-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 flex items-center justify-center"
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
       >
         <Upload className="mr-2" size={18} />
-        Stake Avail
+        Stake PyUSD
       </motion.button>}
 
-      {staked_status && !loading &&
+      {/* {staked_status && !loading &&
       <motion.button
         onClick={unbondAvail}
         className="w-full mt-4 bg-indigo-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-md transition duration-300 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-opacity-50 flex items-center justify-center"
@@ -384,22 +407,22 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
       >
         <Upload className="mr-2" size={18} />
         Unbond Avail
-      </motion.button>}
+      </motion.button>} */}
 
       <AnimatePresence>
-        {avail_stake_msg && !loading && (
+        {pyusd_stake_msg && !loading && (
           <motion.div
             className="mt-6 p-4 bg-gray-800 rounded-lg border border-gray-700"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
           >
-            <p className="text-gray-300 whitespace-pre-wrap">Done: Avail txn hash: {avail_stake_msg}</p>
+            <p className="text-gray-300 whitespace-pre-wrap">Done: PyUSD staked token address: {pyusd_stake_msg}</p>
             
           </motion.div>
         )}
 
-      </AnimatePresence> */}
+      </AnimatePresence>
       <br></br>
       <h2 className="text-3xl font-bold mb-6 text-indigo-400">Add {recordType} Record</h2>
       
@@ -411,7 +434,7 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
           >
-            <p className="text-gray-300 whitespace-pre-wrap">{avail_stake_msg}</p>
+            <p className="text-gray-300 whitespace-pre-wrap">{pyusd_stake_msg}</p>
             
           </motion.div>
         )}
@@ -511,6 +534,12 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
           >
+            <p className="text-gray-300 whitespace-pre-wrap">
+              acknowledgement Hash from stackr rollup: {rollupMsg.ack.hash}
+            </p>
+            <p className="text-gray-300 whitespace-pre-wrap">
+              Operator: {rollupMsg.ack.operator}
+            </p>
             <a 
           className="text-indigo-400 hover:text-indigo-300 transition-colors duration-200 flex items-center mb-4" 
           target='_blank' 

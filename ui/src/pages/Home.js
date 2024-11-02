@@ -8,6 +8,7 @@ import SearchDNSRecord from '../components/SearchDNSRecord';
 import TopicMessages from '../components/TopicMessages';
 import ChainRegistryDashboard from '../components/ChainRegistryDashboard';
 import IBCTransfer from "../components/IBCTransfer";
+import StackrReputation from '../components/StackrReputation';
 // import abiFhenix from "../contracts/ZKDNSFhenix.json";
 import abiHedera from "../contracts/ZKDNS.json";
 import { createWeb3Modal, defaultConfig } from '@web3modal/ethers/react';
@@ -234,6 +235,7 @@ function Home() {
         {activeTab === 'search' && <SearchDNSRecord contract={contract}/>}
         {activeTab === 'zkstats' && <TopicMessages />}
         {activeTab === 'registry' && <ChainRegistryDashboard />}
+        {activeTab === 'reputation' && <StackrReputation/>}
         {activeTab === 'ibc-transfer' && <IBCTransfer contractData={contractData} connectedAddress={address} walletProvider={walletProvider}/>}
 
         {loading && (

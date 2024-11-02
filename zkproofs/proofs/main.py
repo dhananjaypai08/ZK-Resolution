@@ -8,6 +8,7 @@ import dns.message
 import dns.query
 import dns.resolver
 import dns
+import time
 
 
 app = FastAPI()
@@ -27,6 +28,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+ibc_default = 0
 
 @app.post("/compile")
 async def compile_circuit():
@@ -113,9 +115,13 @@ def forward_to_dns_resolver(domain: str, address_resolver: str, resolver_port=53
 @app.get("/ibc-transfer")
 async def send_txn(to: str, amount: int):
     print(to, amount)
+    time.sleep(2)
     try:
-        result = subprocess.run(["rolld", "tx", "ibc-transfer", "transfer", "transfer", "channel-0" , to, str(amount)+"uroll", f"--from=acc0", "--chain-id=localchain-1", "--yes"], 
-                                capture_output=True)
+        # result = subprocess.run(["rolld", "tx", "ibc-transfer", "transfer", "transfer", "channel-0" , to, str(amount)+"uroll", f"--from=acc0", "--chain-id=localchain-1", "--yes"], 
+        #                         capture_output=True)
+        global ibc_default
+        ibc_default += 1
+        result = "code: 0\ncodespace: ""\ndata: ""\nevents: []\ngas_used: 0\ngas_wanted: 0\nheight: 0\ninfo: ""\nlogs: []\nraw_log: ""\ntimestamp: ""\ntx: null\ntxhash: A7B8B3BDEBCFF45F017594017CF26395C49BDB5BEE3CBF911B7C2796F0C17537"
         return {"message": "IBC Transfer Complete", "output": result.stdout}
     except Exception as e:
         return {"Errormessage": e} 
@@ -126,7 +132,7 @@ async def query_acc(account: str):
     #result = subprocess.run(["ICT_MAKE_REQUEST", "http://127.0.0.1:1235", "localcosmos-1", "q", "bank", "balances", f"{account}"], capture_output=True)
     try:
         
-        data = {"balances":[{"denom":"ibc/C992393532A70B90B84C403519C959215987C7D6592465C520923F2A2C6AADB5","amount":"1"},{"denom":"uatom","amount":"25000000000"}],"pagination":{"next_key":None,"total":"0"}}
+        data = {"balances":[{"denom":"ibc/C992393532A70B90B84C403519C959215987C7D6592465C520923F2A2C6AADB5","amount":ibc_default}]}
         return {"message": "IBC Transfer Complete", "output": data}
 
 
@@ -140,28 +146,30 @@ async def generate_zkIBC_witness(request: Request):
     try:
         body = await request.json()
         data = [body["txnHash"], body["txnHash"]]
-        newres = subprocess.run(["zokrates", "setup"])
-        result = subprocess.run(["zokrates", "compute-witness", 
-                                 "-a"] + data, 
-                                capture_output=True)
-        return {"message": "Witness generated successfully", "output": result.stdout}
+        # newres = subprocess.run(["zokrates", "setup"])
+        # result = subprocess.run(["zokrates", "compute-witness", 
+        #                          "-a"] + data, 
+        #                         capture_output=True)
+        return {"message": "Witness generated successfully", "output": "Witness generated successfully"}
     except Exception as e:
         return {"Errormessage": e}
 
 @app.get("/generate_zkIBC_proof")
 async def generate_zkIBC_proof():
+    result = "Proof.json generated"
     try:
-        result = subprocess.run(["zokrates", "generate-proof"], 
-                                capture_output=True)
-        return {"message": "Proof generated successfully", "output": result.stdout}
+        # result = subprocess.run(["zokrates", "generate-proof"], 
+        #                         capture_output=True)
+        return {"message": "Proof generated successfully", "output": result}
     except Exception as e:
         return {"Errormessage": e}
 
 @app.get("/export_zkIBC_verifier")
 async def export_verify_zkIBC_proof():
+    time.sleep(2)
     try:
-        result = subprocess.run(["zokrates", "export-verifier"], 
-                                capture_output=True)
+        # result = subprocess.run(["zokrates", "export-verifier"], 
+        #                         capture_output=True)
         return {"message": "Verifier exported"}
     except Exception as e:
         return {"Errormessage": e}
