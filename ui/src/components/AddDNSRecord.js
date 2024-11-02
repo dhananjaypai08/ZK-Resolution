@@ -276,111 +276,13 @@ function AddDNSRecord({ contractData, connectedAddress, walletProvider, contract
       longitude: '',
       latitude: '',
     });
-    setTransactionHash(`https://www.mintscan.io/evmos-testnet/tx/${tx.hash}`);
+    setTransactionHash(`https://eth-sepolia.blockscout.com/tx/${tx.hash}`);
     setLoading(false);
     setHedera(false);
     setSBTMinted(true);
   };
 
-  function stringToInteger(str) {
-    let hash = 0;
-    for (let i = 0; i < str.length; i++) {
-      const char = str.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
-    }
-    return Math.abs(hash);
-  }
-
-  const addDNSRecord = async (e) => {
-    e.preventDefault();
-    setLoading(true);
-    setFhenix(true);
-    try {
-      setTxnMsg("Encrypting strings");
-      const integer_addressResolver = stringToInteger(dnsRecordInput.addressResolver);
-      const integer_contact = stringToInteger(dnsRecordInput.contact);
-      localStorage.setItem(integer_addressResolver, dnsRecordInput.addressResolver);
-      localStorage.setItem(integer_contact, dnsRecordInput.contact);
-
-      const updatedJSON = `{
-        "name": "${dnsRecordInput.domainName}",
-        "description": "Address Resolver: ${integer_addressResolver}\n    Record Type: ${dnsRecordInput.dnsRecorderType}\n     Expiry: ${dnsRecordInput.expiry}",
-        "image": "${integer_contact}"
-      }`;
-      setTxnMsg("Adding Data to Basin Object store");
-      //const result = await axios.post("http://localhost:8000/adddatatobasin");
-      // const cid = result.data;
-      const result = await ipfs_client.add(updatedJSON);
-      const cid = result.cid.toString();
-      setTxnMsg("Sending data to AVAIL DA");
-      await connectAndSendDataToAvail(cid);
-      setTxnMsg("Uploading on-chain via Fhenix");
-      const newprovider = new BrowserProvider(walletProvider);
-      const contract = new Contract(contractData.address, contractData.abi, newprovider);
-      const newsigner = await newprovider.getSigner();
-      const newcontractWithSigner = contract.connect(newsigner);
-      console.log(dnsRecordInput.addressResolver, dnsRecordInput.expiry);
-      const tx = await newcontractWithSigner.safeMint(
-        connectedAddress,
-        cid,
-        dnsRecordInput.domainName,
-        integer_addressResolver,
-        dnsRecordInput.dnsRecorderType,
-        dnsRecordInput.expiry,
-        integer_contact
-      );
-      await tx.wait();
-      setTransactionHash(`https://explorer.helium.fhenix.zone/tx/${tx.hash}`);
-      setBasinHash(`https://skywalker.infura-ipfs.io/ipfs/${cid}`);
-      setTxnMsg("Attesting a new SBT...");
-      try {
-        await attestDnsInput();
-      } catch {
-        setAttestationDetails({
-          "txnHash": "0xb25574b3c2a659e97e784b7d506a6672443374add8a51d6328ec008a4a5f259f",
-          "AttestationId": "0x13d"
-        });
-      }
-      setTxnMsg("Sending acknowledgement to topic");
-      const message = `Attestation details - Transaction Hash: ${attestationdetails['txnHash']}  AttestationId: ${attestationdetails['AttestationId']}`;
-      const messagedata = { message: message };
-      let response;
-      try {
-        response = await axios.post("http://localhost:4000/sendMessage", messagedata);
-      } catch {
-        response = {
-          "data": {
-            "topicId": "0.0.4790189",
-            "transactionStatus": "Success",
-            "attestationHash": attestationdetails['txnHash'],
-            "attestationId": attestationdetails['AttestationId']
-          }
-        };
-      }
-      
-      const topicdata = response.data;
-      const topicId = topicdata["topicId"];
-      setMintedLinks(topicdata);
-      localStorage.setItem("topicId", topicId);
-      setTxnMsg(`Adding data to rollup using stackr with Avail DA layer`);
-      setTotalMints(1);
-      setQualityMints(1); // Domain minting is a one-time one minting process
-      await createReputationRollup(userId);
-      setDnsRecordInput({
-        domainName: '',
-        addressResolver: '',
-        dnsRecorderType: '',
-        expiry: '',
-        contact: ''
-      });
-    } catch (error) {
-      console.error('Error adding Record:', error);
-      setTxnMsg(`Error adding ${recordType} Record. Please try again.`);
-    }
-    setLoading(false);
-  };
-
+  
   return (
     <motion.div
       className="max-w-2xl mx-auto text-gray-300"
